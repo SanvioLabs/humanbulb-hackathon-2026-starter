@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hackathon App</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f1419;
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+      background: #1a1f26;
+      border: 1px solid #2d3139;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      height: 80vh;
+      max-height: 600px;
+    }
+
+    .header {
+      padding: 20px;
+      border-bottom: 1px solid #2d3139;
+      background: #0f1419;
+    }
+
+    .header h1 {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .message {
+      display: flex;
+      gap: 10px;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .message.user {
+      justify-content: flex-end;
+    }
+
+    .message-content {
+      max-width: 70%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      line-height: 1.5;
+      word-wrap: break-word;
+    }
+
+    .message.user .message-content {
+      background: #0084ff;
+      color: white;
+      border-radius: 12px 12px 4px 12px;
+    }
+
+    .message.assistant .message-content {
+      background: #2d3139;
+      color: #e0e0e0;
+      border-radius: 12px 12px 12px 4px;
+    }
+
+    .input-area {
+      padding: 20px;
+      border-top: 1px solid #2d3139;
+      background: #1a1f26;
+      display: flex;
+      gap: 10px;
+    }
+
+    input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid #2d3139;
+      border-radius: 6px;
+      background: #0f1419;
+      color: #e0e0e0;
+      font-size: 14px;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #0084ff;
+    }
+
+    button {
+      padding: 10px 20px;
+      background: #0084ff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    button:hover {
+      background: #0073e6;
+    }
+
+    button:disabled {
+      background: #333;
+      cursor: not-allowed;
+    }
+
+    .loading {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #999;
+      font-size: 12px;
+    }
+
+    .dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #0084ff;
+      animation: pulse 1.4s infinite;
+    }
+
+    .dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 0.3;
+      }
+      50% {
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🤖 Your Hackathon App</h1>
+    </div>
+    <div class="messages" id="messages"></div>
+    <div class="input-area">
+      <input
+        type="text"
+        id="input"
+        placeholder="Ask me something..."
+        autocomplete="off"
+      >
+      <button id="send" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script>
+    // ========================================================================
+    // MODIFY HERE: Add more intelligence, change the greeting, etc.
+    // ========================================================================
+    const messagesEl = document.getElementById("messages");
+    const inputEl = document.getElementById("input");
+    const sendBtn = document.getElementById("send");
+
+    // Show initial greeting
+    addMessage("Hello! I'm your AI assistant. Ask me anything.", "assistant");
+
+    inputEl.addEventListener("keypress", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    async function sendMessage() {
+      const message = inputEl.value.trim();
+      if (!message) return;
+
+      // Clear input and disable send
+      inputEl.value = "";
+      inputEl.disabled = true;
+      sendBtn.disabled = true;
+
+      // Add user message to chat
+      addMessage(message, "user");
+
+      // Show loading state
+      const loadingId = showLoading();
+
+      try {
+        // Call backend
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        removeLoading(loadingId);
+        addMessage(data.reply, "assistant");
+      } catch (error) {
+        removeLoading(loadingId);
+        addMessage(`Error: ${error.message}`, "assistant");
+      } finally {
+        inputEl.disabled = false;
+        sendBtn.disabled = false;
+        inputEl.focus();
+      }
+    }
+
+    function addMessage(text, role) {
+      const msgEl = document.createElement("div");
+      msgEl.className = `message ${role}`;
+      msgEl.innerHTML = `<div class="message-content">${escapeHtml(text)}</div>`;
+      messagesEl.appendChild(msgEl);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function showLoading() {
+      const id = Date.now();
+      const msgEl = document.createElement("div");
+      msgEl.id = `loading-${id}`;
+      msgEl.className = "message assistant";
+      msgEl.innerHTML = `<div class="loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>`;
+      messagesEl.appendChild(msgEl);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      return id;
+    }
+
+    function removeLoading(id) {
+      const el = document.getElementById(`loading-${id}`);
+      if (el) el.remove();
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
