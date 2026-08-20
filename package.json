@@ -1,0 +1,17 @@
+{
+  "name": "humanbulb-hackathon-cli-agent",
+  "version": "1.0.0",
+  "description": "CLI agent starter for Humanbulb Hackathon 2026",
+  "type": "module",
+  "main": "agent.js",
+  "scripts": {
+    "start": "node agent.js",
+    "verify": "node verify.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.600.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
