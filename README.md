@@ -36,7 +36,7 @@ Good for: web apps, chat interfaces, dashboards, real-time tools.
 1. **Clone this repo**
 2. **Checkout the branch you want** (`git checkout starter/web-app` or `starter/cli-agent`)
 3. **Copy `.env.example` to `.env`** (both branches include this)
-4. **AWS**: Set your profile: `export AWS_PROFILE=hackathon`
+4. **AWS**: see *AWS Account Setup* below. Setting `AWS_PROFILE` is **not** enough
 5. **Verify Bedrock works**: Both branches have a verify step in the README
 
 You get roughly **30 seconds to "hello world"**, then modify from there.
@@ -62,15 +62,62 @@ aws configure sso
 # SSO start URL: <URL on your card>
 # SSO region: us-east-1
 # (press enter for Registration scopes)
-# Pick your account and HackathonParticipant role
+# Pick your account and the HackathonParticipant role
 # CLI region: us-east-1
 # Profile name: hackathon
 
 aws sso login --profile hackathon
-export AWS_PROFILE=hackathon
 ```
 
-That last export matters. Set it in every new terminal.
+### Then, in every terminal you use
+
+**`export AWS_PROFILE=hackathon` is not enough, and this is the single most
+common way to lose half an hour today.**
+
+The AWS CLI understands `AWS_PROFILE`. The Node SDK, Claude Code, Cursor, and
+anything else you run mostly do not. They fail like this:
+
+```
+ForbiddenException: No access
+```
+
+That reads like a permissions problem. It is not. Your account is fine. The
+tool could not turn your profile into credentials.
+
+Hand it credentials directly instead:
+
+```bash
+unset AWS_PROFILE
+eval "$(aws configure export-credentials --profile hackathon --format env)"
+```
+
+Then start `npm start`, `node agent.js`, `claude`, or your editor **from that
+same terminal**. The credentials expire in 12 hours, so nothing long-lived ends
+up in your shell history or your repo.
+
+If something starts failing later in the day, run `aws sso login --profile
+hackathon` and then the `eval` line again.
+
+`unset AWS_PROFILE` matters. With both set, some tools take the profile path
+and fail anyway.
+
+### Using Claude Code against Bedrock
+
+Two extra variables, and they are not optional. Claude Code picks a model by
+tier before it reads `ANTHROPIC_MODEL`, so left alone it reaches for a model
+your account cannot use and fails:
+
+```bash
+export CLAUDE_CODE_USE_BEDROCK=1
+export AWS_REGION=us-east-1
+export ANTHROPIC_DEFAULT_OPUS_MODEL=us.anthropic.claude-haiku-4-5-20251001-v1:0
+export ANTHROPIC_DEFAULT_SONNET_MODEL=us.anthropic.claude-haiku-4-5-20251001-v1:0
+export ANTHROPIC_DEFAULT_HAIKU_MODEL=us.anthropic.claude-haiku-4-5-20251001-v1:0
+
+claude -p "reply with the single word OK"
+```
+
+You want `OK` and no warning about a model being unavailable.
 
 ---
 
@@ -78,12 +125,19 @@ That last export matters. Set it in every new terminal.
 
 | Error | Fix |
 |-------|-----|
-| `AccessDenied` on Bedrock | Check region is `us-east-1`. Check AWS_PROFILE is set. |
-| `Model not found` | Model ID has a typo or the `us.` prefix is missing. Copy exactly from the template. |
-| `Session expired` | Run `aws sso login --profile hackathon` again. Sessions last 12 hours. |
-| Can't import AWS SDK | Run `npm install` in the branch directory. |
+| `ForbiddenException: No access` | **Not a permissions problem.** The tool cannot read your SSO profile. `unset AWS_PROFILE`, then the `eval` line above |
+| `Unexpected field type` | Anthropic's native API shape in a `ConverseCommand`. Content blocks are `{ text }` with no `type`, and `system` is a list, not a string |
+| `AccessDenied` on Bedrock | Wrong region. Everything lives in `us-east-1` |
+| `AccessDenied` on RDS, SageMaker, EC2 | Switched off on purpose. See [what you can use](services-available.md) |
+| `Model not found` | Typo, or a missing `us.` prefix. Copy the ID exactly |
+| `Session expired` | `aws sso login --profile hackathon`, then the `eval` line again |
+| 403 from a Lambda Function URL | Function URLs do not work on these accounts. Use API Gateway |
+| Can't import AWS SDK | `npm install` in the branch directory |
 
-Stuck? Grab an organizer.
+Full list of every service and model open to you, and what to reach for when
+something is switched off: **[services-available.md](services-available.md)**
+
+Stuck? Grab an organizer. We can see inside your account.
 
 ---
 
