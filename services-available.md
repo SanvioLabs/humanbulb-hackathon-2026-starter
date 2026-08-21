@@ -79,6 +79,19 @@ meta.llama3-3-70b-instruct-v1:0                 open weights
 openai.gpt-oss-120b-1:0                         open weights
 mistral.mixtral-8x7b-instruct-v0:1              open weights
 qwen.qwen3-32b-v1:0                             open weights
+deepseek.v3.2                                   open weights
+moonshotai.kimi-k2.5                            open weights
+minimax.minimax-m2.5                            open weights
+zai.glm-4.7                                     open weights
+```
+
+**Reasoning models.** These think out loud before answering, which is genuinely
+useful on hard problems and produces a lot more output tokens than a normal
+reply. Fine to use. Do not put one in a loop and walk away.
+
+```
+us.deepseek.r1-v1:0
+moonshot.kimi-k2-thinking
 ```
 
 **Embeddings**, for search and RAG
