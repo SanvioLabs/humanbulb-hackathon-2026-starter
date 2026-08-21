@@ -12,7 +12,7 @@ async function verify() {
     messages: [
       {
         role: "user",
-        content: [{ type: "text", text: "Say 'Hello from Bedrock!'" }],
+        content: [{ text: "Say 'Hello from Bedrock!'" }],
       },
     ],
     inferenceConfig: {

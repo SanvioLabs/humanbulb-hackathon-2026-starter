@@ -39,15 +39,15 @@ Keep a messages array, append user + assistant messages, re-send:
 const messages = [];
 
 async function chat(userMessage) {
-  messages.push({ role: "user", content: [{ type: "text", text: userMessage }] });
+  messages.push({ role: "user", content: [{ text: userMessage }] });
   const response = await client.send(new ConverseCommand({
     modelId: MODEL_ID,
     messages,
-    system: SYSTEM_PROMPT,
+    system: [{ text: SYSTEM_PROMPT }],
     inferenceConfig: { maxTokens: 1024 },
   }));
   const assistantMessage = response.output.message.content[0].text;
-  messages.push({ role: "assistant", content: [{ type: "text", text: assistantMessage }] });
+  messages.push({ role: "assistant", content: [{ text: assistantMessage }] });
   return assistantMessage;
 }
 ```

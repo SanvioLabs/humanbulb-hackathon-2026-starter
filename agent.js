@@ -20,10 +20,14 @@ async function callClaude(userMessage) {
     messages: [
       {
         role: "user",
-        content: [{ type: "text", text: userMessage }],
+        // Converse content blocks are { text }. No "type" field: that belongs
+        // to Anthropic's native API, and mixing the two shapes fails with
+        // "Unexpected field type" without saying which field.
+        content: [{ text: userMessage }],
       },
     ],
-    system: SYSTEM_PROMPT,
+    // Also a list of blocks, not a string. Same failure, same message.
+    system: [{ text: SYSTEM_PROMPT }],
     inferenceConfig: {
       maxTokens: 1024,
     },
